@@ -46,7 +46,6 @@ int main(int argc, char** argv)
         // Commmunicate upper row
         if (rank == 0)
         {
-            printf("I am process %d, count: %d\n", rank, count);
             for (int i = 0; i < COLS; i++)
             {
                 *(current_upper + i) = BOUNDARY; 
@@ -100,22 +99,18 @@ int main(int argc, char** argv)
         }
         if (count % q == 0)
         {
-            printf("I am process %d, it's morbing time, count:%d\n", rank, count);
-            printf("I am process %d, local max: %f\n", rank, max_dif);
             MPI_Allreduce(&max_dif_segment, &max_dif, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
-            // MPI_Bcast(&max_dif, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
-            printf("I am process %d, Max: %f\n", rank, max_dif);
             if (max_dif <= tolerance)
             {
                 break;
             }
         }
-        // for printing the output in each iteration
+        // for printing the output in each iteration, dont run this in reality
         // MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
         // printf("I am process %d, Finished gathering\n", rank);
         // if (rank == 0)
         // {
-        //     char file_name[10] = "out_";
+        //     char file_name[30] = "output/out_";
         //     char count_str[10];
         //     sprintf(count_str, "%i", count);
         //     printf("%s\n", count_str);
@@ -125,17 +120,14 @@ int main(int argc, char** argv)
         //     printf("I am process %d, Finished writing\n", rank);
         // }
     }
-    printf("I am process %d, Out of loop\n", rank);
     MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    printf("I am process %d, Finished gathering\n", rank);
     if (rank == 0)
     {
-        char file_name[20] = "output/out_";
+        char file_name[30] = "output/out_";
         char count_str[10];
         sprintf(count_str, "%d", count);
         strcat(file_name, count_str);
         Write2File(current, ROWS, COLS, file_name);
-        printf("I am process %d, Finished writing\n", rank);
     }
     MPI_Finalize();
     return 0;
