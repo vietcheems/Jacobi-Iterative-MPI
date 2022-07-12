@@ -98,13 +98,12 @@ int main(int argc, char** argv)
                 *(current_segment + i * COLS + j) = *(next_segment + i * COLS + j);
             }
         }
-        
-        MPI_Reduce(&max_dif_segment, &max_dif, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
         if (count % q == 0)
         {
             printf("I am process %d, it's morbing time, count:%d\n", rank, count);
             printf("I am process %d, local max: %f\n", rank, max_dif);
-            MPI_Bcast(&max_dif, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+            MPI_Allreduce(&max_dif_segment, &max_dif, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
+            // MPI_Bcast(&max_dif, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
             printf("I am process %d, Max: %f\n", rank, max_dif);
             if (max_dif <= tolerance)
             {
