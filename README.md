@@ -2,5 +2,5 @@
 run the code:
 ```
 mpicc -o output jacobi_mpi.c
-mpirun -np <number_of_process> output
+mpirun -np <number_of_processes> output
 ```
