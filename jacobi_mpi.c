@@ -11,7 +11,7 @@
 #define RIGHT_BOUNDARY 100
 #define ROWS 50
 #define COLS 50
-#define Q = 20 // number of iterations between each break condition check
+#define Q 20 // number of iterations between each break condition check
 #define TOLERANCE 0.0001
 
 void intitialize(float *array, int rows, int cols);
