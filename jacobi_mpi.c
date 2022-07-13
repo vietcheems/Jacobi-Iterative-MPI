@@ -4,7 +4,10 @@
 #include <mpi.h>
 #include <math.h>
 
-#define BOUNDARY 25.0
+#define TOP_BOUNDARY 100
+#define BOTTOM_BOUNDARY 0
+#define LEFT_BOUNDARY 0
+#define RIGHT_BOUNDARY 100
 #define ROWS 50
 #define COLS 50
 
@@ -48,7 +51,7 @@ int main(int argc, char** argv)
         {
             for (int i = 0; i < COLS; i++)
             {
-                *(current_upper + i) = BOUNDARY; 
+                *(current_upper + i) = TOP_BOUNDARY; 
             }
             MPI_Send(current_segment + (rows_segment - 1) * COLS, COLS, MPI_FLOAT,
             rank + 1, rank, MPI_COMM_WORLD);
@@ -69,7 +72,7 @@ int main(int argc, char** argv)
         {
             for (int i = 0; i < COLS; i++)
             {
-                *(current_lower + i) = BOUNDARY; 
+                *(current_lower + i) = BOTTOM_BOUNDARY; 
             }
             MPI_Send(current_segment, COLS, MPI_FLOAT, rank - 1, rank, MPI_COMM_WORLD);
         }
@@ -104,21 +107,17 @@ int main(int argc, char** argv)
             {
                 break;
             }
+            // for printing the output in each iteration, dont run this in reality
+            MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
+            if (rank == 0)
+            {
+                char file_name[30] = "output/out_";
+                char count_str[10];
+                sprintf(count_str, "%i", count);
+                strcat(file_name, count_str);
+                Write2File(current, ROWS, COLS, file_name);
+            }
         }
-        // for printing the output in each iteration, dont run this in reality
-        // MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
-        // printf("I am process %d, Finished gathering\n", rank);
-        // if (rank == 0)
-        // {
-        //     char file_name[30] = "output/out_";
-        //     char count_str[10];
-        //     sprintf(count_str, "%i", count);
-        //     printf("%s\n", count_str);
-        //     strcat(file_name, count_str);
-        //     printf("%s\n", file_name);
-        //     Write2File(current, ROWS, COLS, file_name);
-        //     printf("I am process %d, Finished writing\n", rank);
-        // }
     }
     MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
     if (rank == 0)
@@ -141,9 +140,9 @@ void intitialize(float *array, int rows, int cols)
         for (j = 0; j < cols; j++)
         {
             if (i >= (rows / 2 - 5) && i < (rows / 2 + 5) && j >= (cols / 2 - 5) && j < (cols / 2 + 5))
-                *(array + i * cols + j) = 80.0;
+                *(array + i * cols + j) = 0;
             else
-                *(array + i * cols + j) = 25.0;
+                *(array + i * cols + j) = 0;
         }
     }
 }
@@ -156,8 +155,8 @@ void calculate_next_step(float* current, float* next, float* current_upper, floa
         {
             float north = (i == 0) ? *(current_upper + j) : *(current + (i - 1) * cols + j);
             float south = (i == rows - 1) ? *(current_lower + j) : *(current + (i + 1) * cols + j);
-            float west = (j == 0) ? BOUNDARY : *(current + i * cols + j - 1);
-            float east = (j == cols - 1) ? BOUNDARY : *(current + i * cols + j + 1);
+            float west = (j == 0) ? LEFT_BOUNDARY : *(current + i * cols + j - 1);
+            float east = (j == cols - 1) ? RIGHT_BOUNDARY : *(current + i * cols + j + 1);
 
             *(next + i * cols + j) = (north + south + west + east) / 4;
         }
