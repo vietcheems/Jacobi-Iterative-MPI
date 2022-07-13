@@ -20,6 +20,7 @@ void calculate_next_step(float* current, float* next, float* current_upper, floa
 
 int main(int argc, char** argv)
 {
+    // initialize MPI
     int rank;
     int size;
     MPI_Status status;
@@ -28,6 +29,7 @@ int main(int argc, char** argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    // Decompose M x N array into M/Ms arrays of size Ms x N and send to Ms processes
     int count = 0;
     int rows_segment = ROWS / size;
     float* current = (float*) malloc((ROWS * COLS) * sizeof(float));
@@ -36,6 +38,7 @@ int main(int argc, char** argv)
 
     if (rank == 0)
     {
+        // initialize the matrix
         intitialize(current, ROWS, COLS);
         Write2File(current, ROWS, COLS, "output/out_0");
     }
@@ -52,7 +55,7 @@ int main(int argc, char** argv)
         {
             for (int i = 0; i < COLS; i++)
             {
-                *(current_upper + i) = TOP_BOUNDARY; 
+                *(current_upper + i) = TOP_BOUNDARY;
             }
             MPI_Send(current_segment + (rows_segment - 1) * COLS, COLS, MPI_FLOAT,
             rank + 1, rank, MPI_COMM_WORLD);
@@ -73,7 +76,7 @@ int main(int argc, char** argv)
         {
             for (int i = 0; i < COLS; i++)
             {
-                *(current_lower + i) = BOTTOM_BOUNDARY; 
+                *(current_lower + i) = BOTTOM_BOUNDARY;
             }
             MPI_Send(current_segment, COLS, MPI_FLOAT, rank - 1, rank, MPI_COMM_WORLD);
         }
@@ -86,8 +89,10 @@ int main(int argc, char** argv)
             MPI_Send(current_segment, COLS, MPI_FLOAT, rank - 1, rank, MPI_COMM_WORLD);
             MPI_Recv(current_lower, COLS, MPI_FLOAT, rank + 1, rank + 1, MPI_COMM_WORLD, &status);
         }
+        // calculate next iteration according to the formula
         calculate_next_step(current_segment, next_segment, current_upper, current_lower, rows_segment, COLS);
 
+        // calculate local max difference between 2 iterations 
         max_dif_segment = 0;
         for (int i = 0; i < rows_segment; i++)
         {
@@ -103,12 +108,14 @@ int main(int argc, char** argv)
         }
         if (count % Q == 0)
         {
+            // calculate global max difference and broadcast it to all processes
             MPI_Allreduce(&max_dif_segment, &max_dif, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
+            // check stop condition
             if (max_dif <= TOLERANCE)
             {
                 break;
             }
-            // for printing the output in each iteration, dont run this in reality
+            // saving the output in each iteration, dont run this in reality
             MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
             if (rank == 0)
             {
@@ -120,6 +127,7 @@ int main(int argc, char** argv)
             }
         }
     }
+    // save the final output
     MPI_Gather(current_segment, rows_segment * COLS, MPI_FLOAT, current, rows_segment * COLS, MPI_FLOAT, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
