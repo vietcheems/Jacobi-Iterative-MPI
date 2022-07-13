@@ -4,12 +4,15 @@
 #include <mpi.h>
 #include <math.h>
 
+// change hyperparams here
 #define TOP_BOUNDARY 100
 #define BOTTOM_BOUNDARY 0
 #define LEFT_BOUNDARY 0
 #define RIGHT_BOUNDARY 100
 #define ROWS 50
 #define COLS 50
+#define Q = 20 // number of iterations between each break condition check
+#define TOLERANCE 0.0001
 
 void intitialize(float *array, int rows, int cols);
 void Write2File(float *C, int rows, int cols, char file_name[]);
@@ -25,7 +28,6 @@ int main(int argc, char** argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    int q = 20; // number of iterations between each break condition check
     int count = 0;
     int rows_segment = ROWS / size;
     float* current = (float*) malloc((ROWS * COLS) * sizeof(float));
@@ -42,7 +44,6 @@ int main(int argc, char** argv)
     float* current_upper = (float*) malloc(COLS * sizeof(float));
     float* current_lower = (float*) malloc(COLS * sizeof(float));
     float max_dif, max_dif_segment;
-    float tolerance = 0.0001;
     while (1)
     {
         count += 1;
@@ -100,10 +101,10 @@ int main(int argc, char** argv)
                 *(current_segment + i * COLS + j) = *(next_segment + i * COLS + j);
             }
         }
-        if (count % q == 0)
+        if (count % Q == 0)
         {
             MPI_Allreduce(&max_dif_segment, &max_dif, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
-            if (max_dif <= tolerance)
+            if (max_dif <= TOLERANCE)
             {
                 break;
             }
